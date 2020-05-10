@@ -211,10 +211,12 @@ val1s=np.linalg.eigvals(H([1,1,4]))
 val2s=np.linalg.eigvals(H([1,1,10]))
 #Avec plusieurs tests on remarque que pour des valeurs de sigma proches, le hessien est définie positive. Cependant si celles-ci sont trop éloignées on trouve des valeurs propres négatives et le hessien n'est plus définie positif et donc J n'est plus convexe
 
-file=pd.read_csv('trajectoire_reference.csv',sep=';',header=0,decimal=",")
 
 
 ##Récupération de la pente et calcul de gamma
+
+file=pd.read_csv('trajectoire_reference.csv',sep=';',header=0,decimal=",")
+
 test=file['pente'].tolist()
 courbure=np.array(list(np.float_(test)))
 

@@ -5,28 +5,6 @@ import numdifftools as nd
 import math as math
 import pandas as pd
 
-def fun_rosenbrock(x):
-    return np.sum(100*(x[1:]-x[:-1]**2)**2+(1-x[:-1])**2)
-
-def grad_fun_rosenbrock(x):
-    x_j = x[1:-1]
-    x_j_m_1 = x[:-2]
-    x_j_p_1 = x[2:]
-    res = np.zeros_like(x)
-    res[1:-1] = -400*x_j*(x_j_p_1 - x_j**2) + 200*(x_j-x_j_m_1**2) - 2*(1-x_j)
-    res[0] = -400*x[0]*(x[1]-x[0]**2) - 2*(1-x[0])
-    res[-1] = 200*(x[-1]-x[-2]**2)
-    return res
-
-def c(x):
-    return x[0]**2+2*x[1]**3-1
-
-def grad_c(x):
-    return np.array([2*x[0],6*x[1]**2])
-
-def laplacien(fun,c, lam):
-    return lambda x: fun(x)+lam*c(x)
-
 #def uzawa_fixed_step(fun, grad_fun, c, grad_c, x0, l, rho, lambda0 = 1.0, max_iter = 100000, epsilon_grad_L = 1e-8):
 #    xk=x0
 #    lambda_k=lambda0
@@ -133,17 +111,8 @@ def newton_BFGS(fun, grad_fun,x0 , lambdaa =[0], max_iter = 1000, epsilon_grad_L
 
 #La contrainte égalité du problème impose sigma0=sigma_n-1 et on peut donc enlever une dimension au problème. Ainsi on considérera que sigma est de dimension n-1, on se retrouve alors avec des contraintes inégalités que l'on sait résoudre.
 
-
-
-
-gamma_test=np.array([0,0,0])
-
-
-
-
-
 #sigma has to be a numpy array
-def fun_u(sigma,h0,h1,h2,gamma,l=1):
+def fun_u(sigma,h0,h1,h2,gamma=gamma_test,l=1):
     n = len(sigma)
     s = sigma
     res = []
@@ -221,7 +190,7 @@ def c2(sigma):
     tab= V-Vmax
     return tab
 
-def c3(sigma,gamma,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+def c3(sigma,gamma=gamma_test,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
     return -fun_u(sigma,h0,h1,h2,gamma)
 
 def c4(sigma,gamma,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
@@ -281,8 +250,27 @@ def grad_Lagrangien(sigma,lambdaa,h=0.0001,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=
 
     return res+grad_fun_J_df(sigma,gamma_test,h,b1,b2,h0,h1,h2,l)
 
+##Valeurs propres
+
+H=nd.Hessian(fun_J)
+val1s=np.linalg.eigvals(H([1,1,4]))
+val2s=np.linalg.eigvals(H([1,1,10]))
+#Avec plusieurs tests on remarque que pour des valeurs de sigma proches, le hessien est définie positive. Cependant si celles-ci sont trop éloignées on trouve des valeurs propres négatives et le hessien n'est plus définie positif.
+
+file=pd.read_csv('trajectoire_reference.csv',sep=';',header=0,decimal=",")
+
+
+##Récupération de la pente et calcul de gamma
+test=file['pente'].tolist()
+courbure=np.array(list(np.float_(test)))
+
+g=9.81
+
+sin=np.vectorize(math.sin)
+arctan=np.vectorize(math.atan)
+courbure=arctan(math.pi/180*courbure)
+
+gamma_test=g*sin(courbure)
+
+
 print(newton_BFGS(Lagrangien,grad_Lagrangien,np.array([1.,3.]),np.array([1,1,1,1,1,1,1,1,1,1])))
-
-file=pd.read_csv('trajectoire_reference.csv')
-
-

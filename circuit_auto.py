@@ -5,37 +5,7 @@ import numdifftools as nd
 import math as math
 import pandas as pd
 
-#def uzawa_fixed_step(fun, grad_fun, c, grad_c, x0, l, rho, lambda0 = 1.0, max_iter = 100000, epsilon_grad_L = 1e-8):
-#    xk=x0
-#    lambda_k=lambda0
-#    k=0
-#    grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
-#    pk=0
-#    while ((k<max_iter) and (np.linalg.norm(grad_l_k)>epsilon_grad_L)):
-#        grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
-#        pk=-grad_l_k
-#        xk+= l*pk
-#        lambda_k=max([0,lambda_k+ rho*c(xk)])
-#        k+=1
-#    print("Nombre d'iterations : ", k)
-#    return xk
-#
-#x0=np.array([0.,0.])
-#
-#X=np.array([k*0.0001 for k in range(1,101,5)])
-#Y=[]
-#for a in X:
-#    Y=Y+[np.linalg.norm(uzawa_fixed_step(fun_rosenbrock,grad_fun_rosenbrock,c,grad_c, np.array([0., 0.]),a,1)-np.array([0.7684, 0.5894]))]
-#Y=np.array(Y)
-#plt.plot(X,Y)
-#plt.show()
-#
-#
-def cond1(fun, xk,li,pk,c1,grad_fun):
-    return (fun(xk+li*pk)<=fun(xk)+c1*li*np.dot(np.transpose(grad_fun(xk)),pk))
-
-def cond2(fun, xk,li,pk,c2,grad_fun):
-    return (np.dot(np.transpose(grad_fun(xk+li*pk)),pk) >= c2*np.dot(np.transpose(grad_fun(xk)),pk))
+## Algorithmes de résolution
 
 def wolfe_step(fun, grad_fun, xk, pk, lambdaa, c1=0.25, c2=0.75, M=100):
    l_moins, l_plus = 0, math.inf
@@ -43,7 +13,6 @@ def wolfe_step(fun, grad_fun, xk, pk, lambdaa, c1=0.25, c2=0.75, M=100):
    grad_f_xk = grad_fun(xk, lambdaa)
    li = 1
    for i in range(M):
-      print(li)
       if fun(xk + li * pk , lambdaa) > (f_xk + c1 * li * np.dot(grad_f_xk,pk)):
          l_plus = li
          li = (l_moins + l_plus) / 2.0
@@ -60,29 +29,6 @@ def wolfe_step(fun, grad_fun, xk, pk, lambdaa, c1=0.25, c2=0.75, M=100):
 
 
 
-#def uzawa_wolfe_step(fun, grad_fun, c, grad_c, x0, rho, lambda0 = 1.0, max_iter = 100000, epsilon_grad_L = 1e-8):
-#    xk=x0
-#    lambda_k=lambda0
-#    k=0
-#    grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
-#    pk=0
-#    while ((k<max_iter) and (np.linalg.norm(grad_l_k)>epsilon_grad_L)):
-#        grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
-#        pk=-grad_l_k
-#        xk+= wolfe_step(laplacien(fun,c,lambda_k),laplacien(grad_fun,grad_c,lambda_k),xk,pk)*pk
-#        lambda_k=max([0,lambda_k+ rho*c(xk)])
-#        k+=1
-#    print("Nombre d'iterations : ", k)
-#    return xk
-#
-#X=np.array([k*0.0001 for k in range(1,21)])
-#Y=[]
-#for a in X:
-#    Y=Y+[np.linalg.norm(uzawa_wolfe_step(fun_rosenbrock,grad_fun_rosenbrock,c,grad_c, np.array([0., 0.]),a,1)-np.array([0.7684, 0.5894]))]
-#Y=np.array(Y)
-#plt.plot(X,Y)
-#plt.show()
-#
 
 def newton_BFGS(fun, grad_fun,x0 , lambdaa =[0], max_iter = 1000, epsilon_grad_L = 1e-8):
     k = 0
@@ -108,10 +54,13 @@ def newton_BFGS(fun, grad_fun,x0 , lambdaa =[0], max_iter = 1000, epsilon_grad_L
     print("Nombre d'iterations : ", k)
     return xk
 
+##Définition de la fonction cout, des contraintes, du lagrangien et des gradients
 
 #La contrainte égalité du problème impose sigma0=sigma_n-1 et on peut donc enlever une dimension au problème. Ainsi on considérera que sigma est de dimension n-1, on se retrouve alors avec des contraintes inégalités que l'on sait résoudre.
 
-#sigma has to be a numpy array
+#sigma doit être un np.array
+
+#Attention ce qu'on s'appelle ici n, à savoir la dimension de sigma, est en réalité n-1 dans le sujet en raison de la réduction de dimension
 def fun_u(sigma,h0,h1,h2,gamma=gamma_test,l=1):
     n = len(sigma)
     s = sigma
@@ -140,17 +89,17 @@ def fun_J(sigma,gamma=gamma_test, b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
     return np.sum(J_pondere)
 
 def grad_fun_J(sigma,gamma=gamma_test,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+    #Après quelques nous nous sommes aperçus que cette fonction renvoyait de mauvaises valeurs d'où une deuxième fonction gradient
     n = len(sigma)
     u = fun_u(sigma,h0,h1,h2,gamma,l)
     v = fun_v(sigma,l)
     res = []
     d_ui_sigmai = 2/h1*l*sigma[0]*(h2*l)
-    d_ui1_sigmai = -l/h1*sigma[1]
+    d_ui1_sigmai = -l/h1*sigma[1] #représente du_(i+1)/dsigma_i
     res.append((b1*l)*(d_ui_sigmai + d_ui1_sigmai) + 2*b2*(u[1]/sigma[1]*d_ui1_sigmai + u[0]/sigma[0]*d_ui_sigmai) - b2*(u[0]/sigma[0])**2)
     for i in range(1,n-1):
         d_ui_sigmai = 1/h1*(2*l*sigma[i]*(1+h2*l) + l*sigma[i-1])
         d_ui1_sigmai = -l/h1*sigma[i+1]
-        #represente du_(i+1)/dsigma_i
         res.append((b1*l)*(d_ui_sigmai + d_ui1_sigmai) + 2*b2*(u[i+1]/sigma[i+1]*d_ui1_sigmai + u[i]/sigma[i]*d_ui_sigmai) - b2*(u[i]/sigma[i])**2)
     d_ui_sigmai = 1/h1*(2*l*sigma[n-1]*(1+h2*l) + l*sigma[n-2])
     d_ui1_sigmai = -l/h1*sigma[0]
@@ -159,6 +108,7 @@ def grad_fun_J(sigma,gamma=gamma_test,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
     return np.array(res)
 
 def grad_fun_J_df(sigma,gamma=gamma_test,h=0.001,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+    #Nous avons donc décidé d'utiliser une méthode d'approximation du gradient par différences finies
     res=[]
     tab=sigma.copy()
     n=len(sigma)
@@ -176,6 +126,7 @@ test=nd.Hessian(fun_J)
 vmin= 1
 vmax=300
 def c1(sigma):
+    #V >Vmin
     n=len(sigma)
     Vmin=np.array(n*[vmin])
     V=l*sigma
@@ -184,6 +135,7 @@ def c1(sigma):
 
 
 def c2(sigma):
+    #V<Vmax
     n=len(sigma)
     Vmax=np.array(n*[vmin])
     V=l*sigma
@@ -191,16 +143,18 @@ def c2(sigma):
     return tab
 
 def c3(sigma,gamma=gamma_test,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+    #u(sigma)>0
     return -fun_u(sigma,h0,h1,h2,gamma)
 
 def c4(sigma,gamma,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+    #u(sigma)<1
     n=len(sigma)
     return fun_u(sigma,h0,h1,h2,gamma)-np.ones(n)
 
-def c5(sigma):
-    return sigma[-1]-sigma[0]
+
 
 def A(i,n,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=1):
+    #Ai permet d'exprimer ui(sigma) sous la forme 1/2* sigma *Ai* sigma_transposé, ce qui nous est utile pour le calcul du gradient ensuite
     res=np.zeros([n,n])
     if (i !=0 and i != (n)):
         res[i,i]=2/h1*(l+h2*l**2)
@@ -255,7 +209,7 @@ def grad_Lagrangien(sigma,lambdaa,h=0.0001,b1=1000,b2=1000,h0=1,h1=1,h2=0.001,l=
 H=nd.Hessian(fun_J)
 val1s=np.linalg.eigvals(H([1,1,4]))
 val2s=np.linalg.eigvals(H([1,1,10]))
-#Avec plusieurs tests on remarque que pour des valeurs de sigma proches, le hessien est définie positive. Cependant si celles-ci sont trop éloignées on trouve des valeurs propres négatives et le hessien n'est plus définie positif.
+#Avec plusieurs tests on remarque que pour des valeurs de sigma proches, le hessien est définie positive. Cependant si celles-ci sont trop éloignées on trouve des valeurs propres négatives et le hessien n'est plus définie positif et donc J n'est plus convexe
 
 file=pd.read_csv('trajectoire_reference.csv',sep=';',header=0,decimal=",")
 
@@ -272,5 +226,45 @@ courbure=arctan(math.pi/180*courbure)
 
 gamma_test=g*sin(courbure)
 
-
+##Test de newton_BFGS
 print(newton_BFGS(Lagrangien,grad_Lagrangien,np.array([1.,3.]),np.array([1,1,1,1,1,1,1,1,1,1])))
+
+
+## Pour la suite...
+
+#def uzawa_fixed_step(fun, grad_fun, c, grad_c, x0, l, rho, lambda0 = 1.0, max_iter = 100000, epsilon_grad_L = 1e-8):
+#    xk=x0
+#    lambda_k=lambda0
+#    k=0
+#    grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
+#    pk=0
+#    while ((k<max_iter) and (np.linalg.norm(grad_l_k)>epsilon_grad_L)):
+#        grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
+#        pk=-grad_l_k
+#        xk+= l*pk
+#        lambda_k=max([0,lambda_k+ rho*c(xk)])
+#        k+=1
+#    print("Nombre d'iterations : ", k)
+#    return xk
+#
+#def uzawa_wolfe_step(fun, grad_fun, c, grad_c, x0, rho, lambda0 = 1.0, max_iter = 100000, epsilon_grad_L = 1e-8):
+#    xk=x0
+#    lambda_k=lambda0
+#    k=0
+#    grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
+#    pk=0
+#    while ((k<max_iter) and (np.linalg.norm(grad_l_k)>epsilon_grad_L)):
+#        grad_l_k=grad_fun(xk)+lambda_k*grad_c(xk)
+#        pk=-grad_l_k
+#        xk+= wolfe_step(laplacien(fun,c,lambda_k),laplacien(grad_fun,grad_c,lambda_k),xk,pk)*pk
+#        lambda_k=max([0,lambda_k+ rho*c(xk)])
+#        k+=1
+#    print("Nombre d'iterations : ", k)
+#    return xk
+#
+
+#def cond1(fun, xk,li,pk,c1,grad_fun):
+#    return (fun(xk+li*pk)<=fun(xk)+c1*li*np.dot(np.transpose(grad_fun(xk)),pk))
+#
+#def cond2(fun, xk,li,pk,c2,grad_fun):
+#    return (np.dot(np.transpose(grad_fun(xk+li*pk)),pk) >= c2*np.dot(np.transpose(grad_fun(xk)),pk))
